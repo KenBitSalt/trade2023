@@ -1,0 +1,21 @@
+{
+    "path": "./trade",
+    "latest_data": "19000101",
+    "envpath": "D:/miniconda3/envs/dsenv/python.exe",
+    "agents": "data_agent",
+    "data_storage": "market_data",
+    "data_agent": [
+        "Tushare",
+        "JoinQuant",
+        "backtrader",
+        "futu-api"
+    ],
+    "data_types": [
+        "1min",
+        "1day"
+    ],
+    "strategy_agent": "strategy",
+    "data_update_time": "16:30:00",
+    "data_path": "d:/trade/market_data",
+    "can_update": "false"
+}
