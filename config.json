@@ -17,5 +17,5 @@
     "strategy_agent": "strategy",
     "data_update_time": "16:30:00",
     "data_path": "d:/trade/market_data",
-    "can_update": "false"
+    "can_update": "true"
 }

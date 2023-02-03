@@ -50,7 +50,6 @@ if os.path.exists(configuration['path'] + '/' + configuration['data_storage']) =
     print('making directory: %s' % (path_name))
 else:
     print("%s already exists..." % (configuration['path'] + '/' + configuration['data_storage']))
-
 path_name = configuration['path'] + '/' + configuration['data_storage']
 for types in configuration['data_types']:
     if os.path.exists(path_name+ '/'+types) == False:
@@ -58,3 +57,5 @@ for types in configuration['data_types']:
         print('making directory: %s' % (path_name+'/'+types))
     else:
         print("%s already exists..." % (path_name+ '/'+types))
+
+#create d
