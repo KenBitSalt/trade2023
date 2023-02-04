@@ -26,6 +26,9 @@ def activate_ts_pro():
     ts.set_token(token)
     pro = ts.pro_api(token)
 
+def is_today_tradeday(today_date):
+    pass
+
 if __name__ == "__main__":
     import os
     import time
@@ -39,7 +42,12 @@ if __name__ == "__main__":
     import argparse
     from tqdm import tqdm
 
-    activate_ts_pro()
+    pro = activate_ts_pro()
+
+    today = datetime.today().strftime('%Y%m%d') 
+    #print('today is: %s' % today)
+
+    is_trade = is_today_tradeday(today)
 
     with open('config.json', 'r') as j:
         config_df = json.loads(j.read())

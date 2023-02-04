@@ -74,6 +74,12 @@ def store_1min(stock,path,date):
         print(df.shape)
         os.chdir(base_dir)  # go back to base dir
 
+def activate_ts_pro():
+    # 初始化pro接口
+    token = 'edde8271b419fde9edbb0cfba7e223476af8286db034fc4f7ae10556'
+    ts.set_token(token)
+    pro = ts.pro_api(token)
+    return pro
 
 if __name__ == "__main__":
     import os
@@ -86,15 +92,14 @@ if __name__ == "__main__":
     from datetime import datetime
     import argparse
 
-    # 初始化pro接口
-    token = 'edde8271b419fde9edbb0cfba7e223476af8286db034fc4f7ae10556'
-    ts.set_token(token)
-    pro = ts.pro_api(token)
     parser = argparse.ArgumentParser(description='store 1 day and 1 min data of stock into data directory')
     parser.add_argument('-s', '--stock_id', help='stock_id of interest')
     args = parser.parse_args()
+    
     today = datetime.today().strftime('%Y%m%d') 
     #print('today is: %s' % today)
+
+    pro = activate_ts_pro()
 
     # 目标股票：
     stock_id = args.stock_id
