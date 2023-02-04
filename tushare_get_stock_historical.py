@@ -4,14 +4,6 @@ def activate_ts_pro():
     ts.set_token(token)
     pro = ts.pro_api(token)
 
-def get_stocknames():
-    names = pd.read_parquet('stock_config.gzip')['instrument_id'].to_numpy()
-    return names
-
-def get_stockstarts():
-    starts = names = pd.read_parquet('stock_config.gzip')['list_date'].to_numpy()
-    return starts
-
 if __name__ == "__main__":
     import os
     import argparse
@@ -21,8 +13,7 @@ if __name__ == "__main__":
     import json
     import datetime
     from datetime import datetime
-    import argparse
 
     activate_ts_pro()
-    stock_names = get_stocknames()
-    print(stock_names)
+    stocks = pd.read_parquet("stock_config.gzip")
+    print(stocks)
