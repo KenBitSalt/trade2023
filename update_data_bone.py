@@ -1,12 +1,11 @@
 def update_daily():
     # read the 'can_update' parameter in the config json file
-    runner =config_df["envpath_mac"]
     update_list = get_all_stocknames()
     print(update_list)
     if check_can_update():
         print("updating daily data to stocks...")
         for stock_id in tqdm(update_list):
-            subprocess.call(('%s tushare_get_stock_updates_today.py -s %s' % (runner, stock_id)), shell=True)
+            subprocess.call(('%s tushare_get_stock_updates_today.py -s %s' % ('python', stock_id)), shell=True)
     
 def check_can_update():
     with open('config.json', 'r') as j:
