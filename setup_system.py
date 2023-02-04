@@ -13,7 +13,8 @@ configuration = {
     'strategy_agent' : 'strategy',
     'data_update_time': '16:30:00',
     'data_path' : 'd:/trade/market_data',
-    'can_update' : 'false'
+    'can_update' : 'false',
+    'stock_config' : 'stock_config.gzip'
 }
 
 with open("config.json", "w") as outfile:
