@@ -4,12 +4,13 @@ def activate_ts_pro():
     ts.set_token(token)
     pro = ts.pro_api(token)
 
-def get_stock_conf_path():
-    with open('config.json', 'r') as j:
-        config_df = json.loads(j.read())
-    datapath = config_df['stock_config']
-    #print('Using Storage at: %s' % datapath)
-    return datapath
+def get_stocknames():
+    names = pd.read_parquet('stock_config.gzip')['instrument_id'].to_numpy()
+    return names
+
+def get_stockstarts():
+    starts = names = pd.read_parquet('stock_config.gzip')['list_date'].to_numpy()
+    return starts
 
 if __name__ == "__main__":
     import os
@@ -23,6 +24,5 @@ if __name__ == "__main__":
     import argparse
 
     activate_ts_pro()
-    stock_conf_path = get_stock_conf_path()
-    df = pd.read_parquet(stock_conf_path)
-    print(df)
+    stock_names = get_stocknames()
+    print(stock_names)

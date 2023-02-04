@@ -33,6 +33,7 @@ def setup_stock_config(stock_array):
         "market",
         "list_date"
         ]
+    df["latest_update"] = df["list_date"]
     df.to_parquet("stock_config.gzip")
 
 if __name__ == "__main__":
