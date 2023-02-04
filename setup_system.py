@@ -5,7 +5,8 @@ configuration = dict()
 configuration = {
     'path' : './trade',
     'latest_data' : '19000101',
-    'envpath' : 'D:/miniconda3/envs/dsenv/python.exe',
+    'envpath_win' : 'D:/miniconda3/envs/dsenv/python.exe',
+    'envpath_mac' : '/opt/miniconda3/envs/dsenv/bin/python',
     'agents' : 'data_agent',
     'data_storage' : 'market_data',
     'data_agent' : ['Tushare', 'JoinQuant', 'backtrader','futu-api'],

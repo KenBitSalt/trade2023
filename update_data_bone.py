@@ -1,13 +1,11 @@
 def update_daily():
     # read the 'can_update' parameter in the config json file
-    with open('stock_config.json', 'r') as j:
-        stocklist_df = json.loads(j.read())
-
-    runner =config_df["envpath"]
-
+    runner =config_df["envpath_mac"]
+    update_list = get_all_stocknames()
+    print(update_list)
     if check_can_update():
         print("updating daily data to stocks...")
-        for stock_id in tqdm(['000001.SZ', '000002.SZ', '000008.SZ', '000004.SZ', '000005.SZ', ]):
+        for stock_id in tqdm(update_list):
             subprocess.call(('%s tushare_get_stock_updates_today.py -s %s' % (runner, stock_id)), shell=True)
     
 def check_can_update():
@@ -18,6 +16,10 @@ def check_can_update():
 
 def change_can_update():
     pass
+
+def get_all_stocknames():
+    df = pd.read_parquet("stock_config.gzip")
+    return df['instrument_id'].to_numpy()
 
 def activate_ts_pro():
     # 初始化pro接口
@@ -42,10 +44,7 @@ if __name__ == "__main__":
 
     with open('config.json', 'r') as j:
         config_df = json.loads(j.read())
-
-    env_path = config_df['envpath']
     can_update = False
-
     update_daily()
 
     

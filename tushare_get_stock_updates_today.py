@@ -6,6 +6,7 @@ def concat_2_df(df1, df2):
 # if stock not exist, create new csv and save it
 def update_df_to_dir(df, csv_name, directory):
     target_save = directory+'/'+csv_name
+    #print(target_save)
     if os.path.isfile(target_save):
         concat_2_df(df, pd.read_csv(target_save)).to_csv(csv_name, index=False)
     else:
@@ -27,18 +28,16 @@ def update_1day(stock,path,date):
         os.makedirs(path)
         os.chdir(path)
         #print('Creating and going to: %s' % path)
-
     df = pro.daily(ts_code=stock, start_date=date, end_date=date)
 
     if df.shape[0] >= 1:  # if today's data exists
         csv_name = stock+'.csv'
-        
         #print('updating daily data to dir: %s\%s' % (os.getcwd(),csv_name))
         update_df_to_dir(df, csv_name, os.getcwd())
         os.chdir(base_dir)  # go back to base dir
     
     else:
-        #print('data is not significant, shape is: ')
+        print('data is not significant, shape is: ')
         #print(df.shape)
         os.chdir(base_dir)  # go back to base dir
 
@@ -91,11 +90,9 @@ if __name__ == "__main__":
     token = 'edde8271b419fde9edbb0cfba7e223476af8286db034fc4f7ae10556'
     ts.set_token(token)
     pro = ts.pro_api(token)
-   
     parser = argparse.ArgumentParser(description='store 1 day and 1 min data of stock into data directory')
     parser.add_argument('-s', '--stock_id', help='stock_id of interest')
     args = parser.parse_args()
-
     today = datetime.today().strftime('%Y%m%d') 
     #print('today is: %s' % today)
 
