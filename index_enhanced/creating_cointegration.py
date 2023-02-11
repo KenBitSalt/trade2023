@@ -129,8 +129,10 @@ def split_df_train_test(label, train, days):
 def run(index_code, start_date, end_date, premium):
     index_close_df = get_index_close(index_code, start=start_date, end=end_date).sort_values("trade_date").reset_index(drop=True)
     index_pure_close_df = index_close_df.copy()
+
     comp_names = get_index_comp(index_code, end="20221230")["con_code"].to_list()
-    index_close_df = add_premium_to_index(index_close_df, premium)
+    index_close_df = add_premium_to_index(index_close_df, premium)  # with premium to index added
+
     print('original index is:')
     print(index_pure_close_df)
     print('Index added with premium is:')
@@ -139,9 +141,11 @@ def run(index_code, start_date, end_date, premium):
     print("The index has %s components" % len(comp_names))
     print()
 
+    # all constituients need to be present all along the window
     comp_close_df = get_comp_close(comp_names, start=start_date, end=end_date)
     comp_close_df.columns = comp_names
-    comp_close_df = comp_close_df.dropna(axis = 1)  # all constituients need to be present all along the window
+    comp_close_df = comp_close_df.dropna(axis = 1)  
+    
     """
     a portfolio selection process is needed
     """
