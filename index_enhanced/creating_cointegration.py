@@ -47,6 +47,7 @@ def get_comp_close(comp_names, start, end):
             close_df = pd.read_parquet("data/%s_%s_%s.gzip"%(comp,start,end))
         else:
             close_df = pro.daily(ts_code=comp, start_date=start, end_date=end)[['trade_date','close']]
+            close_df = close_df.sort_values(by = 'trade_date').reset_index(drop=True)
             close_df.to_parquet("data/%s_%s_%s.gzip"%(comp,start,end))
         result.append(close_df["close"].to_numpy())
 
@@ -61,19 +62,67 @@ def test_tsa(refined_portfolio):
         print(f"p-value: {result[1]}")
         print(f"Critical Values: {result[4]}")
 
+def get_coint_portfolio(y, X):
+    clf = linear_model.Lasso(alpha=0.01, positive=True)
+    clf.fit(X,y)
+    return clf.coef_
+
+def gen_non_neg_raw_weight(index_close_df, comp_close_df):
+    raw_weight_np = get_coint_portfolio(index_close_df['close'], comp_close_df)
+    raw_weight_df = pd.DataFrame(raw_weight_np)
+    raw_weight_df.columns = ['raw_weight']
+    raw_weight_df['instrument_id'] = comp_close_df.columns
+    raw_weight_df = raw_weight_df[raw_weight_df['raw_weight']>0].sort_values('raw_weight').reset_index(drop=True)
+    return raw_weight_df
+
+def normalize_raw(raw_df):
+    result = raw_df
+    result['normal_weight'] = result['raw_weight']/sum(result['raw_weight'])
+    return result, sum(result['raw_weight'])
+
+def add_premium_to_index(index_close_df, premium):
+    premium_perday = premium/251
+    index_close_multi = [1]
+    for i in range(len(index_close_df)-1):
+        index_close_multi.append(index_close_multi[i]*(1+premium_perday))
+    index_close_multi = np.array(index_close_multi)
+    index_close_df['close'] = index_close_df['close']*index_close_multi
+    return index_close_df
+
+def plot_result(normalized_weight_df, normalization_factor, index_close_df, comp_close_df):
+    port_performance = []
+    for i in range(len(normalized_weight_df)):
+        raw = normalized_weight_df.loc[i,'raw_weight']
+        id = normalized_weight_df.loc[i,'instrument_id']
+    return np.nan
 
 def run(index_code, start_date, end_date):
-    index_close_df = get_index_close(index_code, start=start_date, end=end_date)
-    print(index_close_df)
-
+    index_close_df = get_index_close(index_code, start=start_date, end=end_date).sort_values("trade_date").reset_index(drop=True)
     comp_names = get_index_comp(index_code, end="20221230")["con_code"].to_list()
+    index_close_df = add_premium_to_index(index_close_df, 0.15)
+
+    print(index_close_df)
     print()
     print("The index has %s components" % len(comp_names))
     print()
+
     comp_close_df = get_comp_close(comp_names, start=start_date, end=end_date)
     comp_close_df.columns = comp_names
     comp_close_df = comp_close_df.dropna(axis = 1)
-    print(comp_close_df)
+    print(comp_close_df.shape)
+
+    X = comp_close_df[:200]
+    y = index_close_df[:200]
+
+    raw_weight_df = gen_non_neg_raw_weight(y, X)
+    normalized_weight_df, normalization_factor = normalize_raw(raw_weight_df)
+    print(normalized_weight_df)
+
+    plot_result(normalized_weight_df, normalization_factor, index_close_df, comp_close_df)
+
+    
+
+
 
 
 if __name__ == "__main__":
@@ -83,6 +132,8 @@ if __name__ == "__main__":
     import tushare as ts
     from tqdm import tqdm
     import statsmodels.tsa.stattools as tsa
+    from sklearn import linear_model
+    import statsmodels.api as sm
     import matplotlib.pyplot as plt
 
     import argparse
