@@ -63,7 +63,7 @@ def test_tsa(refined_portfolio):
         print(f"Critical Values: {result[4]}")
 
 def get_coint_portfolio(y, X):
-    clf = linear_model.Lasso(alpha=0.01, positive=True)
+    clf = linear_model.Lasso(alpha=0.00001, positive=True)
     clf.fit(X,y)
     return clf.coef_
 
@@ -89,18 +89,51 @@ def add_premium_to_index(index_close_df, premium):
     index_close_df['close'] = index_close_df['close']*index_close_multi
     return index_close_df
 
-def plot_result(normalized_weight_df, normalization_factor, index_close_df, comp_close_df):
-    port_performance = []
-    for i in range(len(normalized_weight_df)):
+def plot_result(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, days):
+    total = np.zeros(len(index_close_df))
+    for i in range(len(normalized_weight_df)):  # for each stock, add their contributions
         raw = normalized_weight_df.loc[i,'raw_weight']
         id = normalized_weight_df.loc[i,'instrument_id']
+        contribution  = comp_close_df.loc[:,id]*raw
+        total = total+contribution
+
+    factor = total[0]/index_pure_close_df.loc[0,'close']
+    total = total/factor
+
+    plt.plot(total,label='portfolio')
+    plt.plot(index_close_df['close'],label='target')
+    plt.plot(index_pure_close_df['close'],label='000905.SH')
+    plt.axvline(x = days, color = 'black', label = 'train-test division')
+    plt.legend()
+    plt.show()
     return np.nan
 
-def run(index_code, start_date, end_date):
-    index_close_df = get_index_close(index_code, start=start_date, end=end_date).sort_values("trade_date").reset_index(drop=True)
-    comp_names = get_index_comp(index_code, end="20221230")["con_code"].to_list()
-    index_close_df = add_premium_to_index(index_close_df, 0.15)
+def calculate_error(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, train_days):
+    total = np.zeros(len(index_close_df))
+    for i in range(len(normalized_weight_df)):  # for each stock, add their contributions
+        raw = normalized_weight_df.loc[i,'raw_weight']
+        id = normalized_weight_df.loc[i,'instrument_id']
+        contribution  = comp_close_df.loc[:,id]*raw
+        total = total+contribution
 
+    factor = total[0]/index_pure_close_df.loc[0,'close']
+    total = np.array(total/factor)[train_days:]
+    target = index_close_df["close"].to_numpy()[train_days:]
+    error = np.var(total-target)
+    return error
+
+def split_df_train_test(label, train, days):
+    return label[:days], train[:days], label[days:], train[days:]
+
+
+def run(index_code, start_date, end_date, premium):
+    index_close_df = get_index_close(index_code, start=start_date, end=end_date).sort_values("trade_date").reset_index(drop=True)
+    index_pure_close_df = index_close_df.copy()
+    comp_names = get_index_comp(index_code, end="20221230")["con_code"].to_list()
+    index_close_df = add_premium_to_index(index_close_df, premium)
+    print('original index is:')
+    print(index_pure_close_df)
+    print('Index added with premium is:')
     print(index_close_df)
     print()
     print("The index has %s components" % len(comp_names))
@@ -108,23 +141,33 @@ def run(index_code, start_date, end_date):
 
     comp_close_df = get_comp_close(comp_names, start=start_date, end=end_date)
     comp_close_df.columns = comp_names
-    comp_close_df = comp_close_df.dropna(axis = 1)
+    comp_close_df = comp_close_df.dropna(axis = 1)  # all constituients need to be present all along the window
+    """
+    a portfolio selection process is needed
+    """
     print(comp_close_df.shape)
 
-    X = comp_close_df[:200]
-    y = index_close_df[:200]
+    # a training and test process
+    error_list = []
+    non_consider_headtime = 30
+    for i in tqdm(range(non_consider_headtime,len(comp_close_df)-300)):
+        train_days = i
+        y, X, test_y,test_X = split_df_train_test(index_close_df, comp_close_df, train_days)
+        # producing predictions
+        raw_weight_df = gen_non_neg_raw_weight(y, X)
+        normalized_weight_df, normalization_factor = normalize_raw(raw_weight_df)
+        error = calculate_error(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, train_days)
+        error_list.append(error)
 
-    raw_weight_df = gen_non_neg_raw_weight(y, X)
-    normalized_weight_df, normalization_factor = normalize_raw(raw_weight_df)
-    print(normalized_weight_df)
+    plt.plot(error_list)
+    plt.show()
+    tmp = min(error_list)
+    index = error_list.index(tmp)+non_consider_headtime
+    print(index)
 
-    plot_result(normalized_weight_df, normalization_factor, index_close_df, comp_close_df)
+    plot_result(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, index)
 
     
-
-
-
-
 if __name__ == "__main__":
     import os
     import pandas as pd
@@ -150,6 +193,6 @@ if __name__ == "__main__":
 
     pro = activate_ts_pro()
 
-    run(index_code, start_date, end_date)
+    run(index_code, start_date, end_date, 0.05)
 
     
