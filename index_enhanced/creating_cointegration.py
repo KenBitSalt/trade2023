@@ -63,7 +63,7 @@ def test_tsa(refined_portfolio):
         print(f"Critical Values: {result[4]}")
 
 def get_coint_portfolio(y, X):
-    clf = linear_model.Lasso(alpha=0.001, positive=True, max_iter=1000)
+    clf = linear_model.Lasso(alpha=0.001, positive=True, max_iter=2000)
     clf.fit(X,y)
     return clf.coef_
 
@@ -90,7 +90,7 @@ def add_premium_to_index(index_close_df, premium):
     return index_close_df
 
 def plot_result(index_pure_close_df, index_close_df, 
-                comp_close_df, error_list, weight_df_list, non_consider_headtime):
+                comp_close_df, error_list, weight_df_list, non_consider_headtime, validation_days):
     
     
     fig = plt.figure(figsize=(22,5))
@@ -104,7 +104,9 @@ def plot_result(index_pure_close_df, index_close_df,
     tmp = min(error_list)
     index = error_list.index(tmp)  # index of min tracking error and best portfolio
     best_weight_df = weight_df_list[index]
-    split_index = index + non_consider_headtime
+    train_split_index = index + non_consider_headtime
+    validation_split_index = index + non_consider_headtime+validation_days
+
     ax1.annotate(text='best tracking error to premiumed index', xy=(index,error_list[index]),c="red")
     ax1.scatter(x=index, y = error_list[index], s=30, c="red")
 
@@ -122,13 +124,14 @@ def plot_result(index_pure_close_df, index_close_df,
     ax2.plot(total,label='portfolio')
     ax2.plot(index_close_df['close'],label='target')
     ax2.plot(index_pure_close_df['close'],label='000905.SH')
-    ax2.axvline(x = split_index, color = 'black', label = 'train-test division')
+    ax2.axvline(x = train_split_index, color = 'black', label = 'train-validation division')
+    ax2.axvline(x = validation_split_index, color = 'red', label = 'validation-real division')
     ax2.set_title('train & test simulation')
     ax2.legend()
 
     # plot test days pnl
-    portfolio_test_days = total[split_index:]
-    index_test_days = index_pure_close_df.loc[split_index:,'close'].to_numpy()
+    portfolio_test_days = total[validation_split_index:]
+    index_test_days = index_pure_close_df.loc[validation_split_index:,'close'].to_numpy()
     overperfromance = portfolio_test_days - index_test_days
     ax3.plot(overperfromance,label='outperformance')
     ax3.set_ylabel('enhance premium')
@@ -140,18 +143,26 @@ def plot_result(index_pure_close_df, index_close_df,
 
     return np.nan
 
-def calculate_error(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, train_days):
+def calculate_error(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, train_days, validation_days):
     total = np.zeros(len(index_close_df))
-    for i in range(len(normalized_weight_df)):  # for each stock, add their contributions
+    for i in range(len(normalized_weight_df)):  # for each stock, add their contributions to simulate performance
         raw = normalized_weight_df.loc[i,'raw_weight']
         id = normalized_weight_df.loc[i,'instrument_id']
         contribution  = comp_close_df.loc[:,id]*raw
-        total = total+contribution
+        total = total+contribution  # the performance
 
-    factor = total[0]/index_pure_close_df.loc[0,'close']
-    total = np.array(total/factor)[train_days:]
-    target = index_close_df["close"].to_numpy()[train_days:]
-    error = np.var(total-target)  # this might need change
+    normalization_factor = total[0]/index_pure_close_df.loc[0,'close']
+
+    #calculate validation-error in the validation time window
+    total = np.array(total/normalization_factor)
+    total_return = np.diff(total) / total[:-1]
+    total_return = np.insert(total_return, 0, 0, axis=0)[train_days:train_days + validation_days]
+    #[train_days:train_days + validation_days]
+    target = index_close_df["close"].to_numpy()
+    target_return = np.diff(target) / target[:-1]
+    target_return = np.insert(target_return, 0, 0, axis=0)[train_days:train_days + validation_days]
+    #[train_days:train_days + validation_days]
+    error = np.var(total_return-target_return)  # this might need change
     return error
 
 def split_df_train_test(label, train, days):
@@ -182,28 +193,34 @@ def run(index_code, start_date, end_date, premium):
     # a training and test process
     error_list = []
     weight_df_list = []
-    non_consider_headtime = 60
-    for i in tqdm(range(non_consider_headtime,len(comp_close_df)-500)): #days: 30 -> (end-400)
+    non_consider_headtime = 350
+    max_train_days = 400
+    validation_days = 250
+
+    for i in tqdm(range(non_consider_headtime,non_consider_headtime+max_train_days)): #days: 30 -> (end-400)
         train_days = i
         y, X, test_y,test_X = split_df_train_test(index_close_df, comp_close_df, train_days)
         # producing predictions: weight dataframe
         raw_weight_df = gen_non_neg_raw_weight(y, X)
         normalized_weight_df, normalization_factor = normalize_raw(raw_weight_df)
-        error = calculate_error(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, train_days)
+        error = calculate_error(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, train_days, validation_days)
         error_list.append(error)
         weight_df_list.append(normalized_weight_df)
 
     tmp = min(error_list)
     index = error_list.index(tmp)  # index of min tracking error and best portfolio
     best_weight_df = weight_df_list[index]
-    split_index = index + non_consider_headtime
+    train_split_index = index + non_consider_headtime
+    validation_split_index = index + non_consider_headtime+validation_days
     print('Best weight is: ')
     print(best_weight_df)
     print(index)
-    print("trained for %s days..." % split_index)
+    print("trained for %s days..." % index)
+    print("training stopped at %s days..." % train_split_index)
+    print("validation stopped at %s days..." % validation_split_index)
 
     plot_result(index_pure_close_df, index_close_df, 
-                comp_close_df, error_list, weight_df_list, non_consider_headtime)
+                comp_close_df, error_list, weight_df_list, non_consider_headtime, validation_days)
 
 if __name__ == "__main__":
     import os
@@ -227,7 +244,7 @@ if __name__ == "__main__":
     index_code = args.index_id # specify the code for the index
     start_date = args.start # specify the start date
     end_date = args.end # specify the end date
-    premium = 0.05
+    premium = 0.09   
 
     pro = activate_ts_pro()
 
