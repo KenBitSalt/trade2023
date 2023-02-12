@@ -63,7 +63,7 @@ def test_tsa(refined_portfolio):
         print(f"Critical Values: {result[4]}")
 
 def get_coint_portfolio(y, X):
-    clf = linear_model.Lasso(alpha=0.001, positive=True, max_iter=5000)
+    clf = linear_model.Lasso(alpha=0.001, positive=True, max_iter=1000)
     clf.fit(X,y)
     return clf.coef_
 
@@ -89,23 +89,55 @@ def add_premium_to_index(index_close_df, premium):
     index_close_df['close'] = index_close_df['close']*index_close_multi
     return index_close_df
 
-def plot_result(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, days):
+def plot_result(index_pure_close_df, index_close_df, 
+                comp_close_df, error_list, weight_df_list, non_consider_headtime):
+    
+    
+    fig = plt.figure(figsize=(22,5))
+    ax1, ax2, ax3 = fig.subplots(1,3)
+
+    ax1.plot(error_list)
+    ax1.set_xlabel('train iterations number (days)')
+    ax1.set_ylabel('tracking error')
+    ax1.set_title('meta-parameter selection')
+
+    tmp = min(error_list)
+    index = error_list.index(tmp)  # index of min tracking error and best portfolio
+    best_weight_df = weight_df_list[index]
+    split_index = index + non_consider_headtime
+    ax1.annotate(text='best tracking error to premiumed index', xy=(index,error_list[index]),c="red")
+    ax1.scatter(x=index, y = error_list[index], s=30, c="red")
+
     total = np.zeros(len(index_close_df))
-    for i in range(len(normalized_weight_df)):  # for each stock, add their contributions
-        raw = normalized_weight_df.loc[i,'raw_weight']
-        id = normalized_weight_df.loc[i,'instrument_id']
+    for i in range(len(best_weight_df)):  # for each stock, add their contributions
+        raw = best_weight_df.loc[i,'raw_weight']
+        id = best_weight_df.loc[i,'instrument_id']
         contribution  = comp_close_df.loc[:,id]*raw
         total = total+contribution
 
     factor = total[0]/index_pure_close_df.loc[0,'close']
     total = total/factor
 
-    plt.plot(total,label='portfolio')
-    plt.plot(index_close_df['close'],label='target')
-    plt.plot(index_pure_close_df['close'],label='000905.SH')
-    plt.axvline(x = days, color = 'black', label = 'train-test division')
-    plt.legend()
+    # plot overview
+    ax2.plot(total,label='portfolio')
+    ax2.plot(index_close_df['close'],label='target')
+    ax2.plot(index_pure_close_df['close'],label='000905.SH')
+    ax2.axvline(x = split_index, color = 'black', label = 'train-test division')
+    ax2.set_title('train & test simulation')
+    ax2.legend()
+
+    # plot test days pnl
+    portfolio_test_days = total[split_index:]
+    index_test_days = index_pure_close_df.loc[split_index:,'close'].to_numpy()
+    overperfromance = portfolio_test_days - index_test_days
+    ax3.plot(overperfromance,label='outperformance')
+    ax3.set_ylabel('enhance premium')
+    ax3.set_xlabel('days (test window)')
+    ax3.set_title('premium return simulation')
+    
     plt.show()
+
+
     return np.nan
 
 def calculate_error(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, train_days):
@@ -119,7 +151,7 @@ def calculate_error(normalized_weight_df, index_pure_close_df, index_close_df, c
     factor = total[0]/index_pure_close_df.loc[0,'close']
     total = np.array(total/factor)[train_days:]
     target = index_close_df["close"].to_numpy()[train_days:]
-    error = np.var(total-target)
+    error = np.var(total-target)  # this might need change
     return error
 
 def split_df_train_test(label, train, days):
@@ -149,23 +181,29 @@ def run(index_code, start_date, end_date, premium):
 
     # a training and test process
     error_list = []
-    non_consider_headtime = 30
-    for i in tqdm(range(non_consider_headtime,len(comp_close_df)-400)):
+    weight_df_list = []
+    non_consider_headtime = 60
+    for i in tqdm(range(non_consider_headtime,len(comp_close_df)-500)): #days: 30 -> (end-400)
         train_days = i
         y, X, test_y,test_X = split_df_train_test(index_close_df, comp_close_df, train_days)
-        # producing predictions
+        # producing predictions: weight dataframe
         raw_weight_df = gen_non_neg_raw_weight(y, X)
         normalized_weight_df, normalization_factor = normalize_raw(raw_weight_df)
         error = calculate_error(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, train_days)
         error_list.append(error)
+        weight_df_list.append(normalized_weight_df)
 
-    plt.plot(error_list)
-    plt.show()
     tmp = min(error_list)
-    index = error_list.index(tmp)+non_consider_headtime
+    index = error_list.index(tmp)  # index of min tracking error and best portfolio
+    best_weight_df = weight_df_list[index]
+    split_index = index + non_consider_headtime
+    print('Best weight is: ')
+    print(best_weight_df)
     print(index)
+    print("trained for %s days..." % split_index)
 
-    plot_result(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, index)
+    plot_result(index_pure_close_df, index_close_df, 
+                comp_close_df, error_list, weight_df_list, non_consider_headtime)
 
 if __name__ == "__main__":
     import os
@@ -189,9 +227,10 @@ if __name__ == "__main__":
     index_code = args.index_id # specify the code for the index
     start_date = args.start # specify the start date
     end_date = args.end # specify the end date
+    premium = 0.05
 
     pro = activate_ts_pro()
 
-    run(index_code, start_date, end_date, 0.03)
+    run(index_code, start_date, end_date, premium)
 
     
