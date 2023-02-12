@@ -63,7 +63,7 @@ def test_tsa(refined_portfolio):
         print(f"Critical Values: {result[4]}")
 
 def get_coint_portfolio(y, X):
-    clf = linear_model.Lasso(alpha=0.00001, positive=True)
+    clf = linear_model.Lasso(alpha=0.001, positive=True, max_iter=5000)
     clf.fit(X,y)
     return clf.coef_
 
@@ -150,7 +150,7 @@ def run(index_code, start_date, end_date, premium):
     # a training and test process
     error_list = []
     non_consider_headtime = 30
-    for i in tqdm(range(non_consider_headtime,len(comp_close_df)-300)):
+    for i in tqdm(range(non_consider_headtime,len(comp_close_df)-400)):
         train_days = i
         y, X, test_y,test_X = split_df_train_test(index_close_df, comp_close_df, train_days)
         # producing predictions
@@ -167,7 +167,6 @@ def run(index_code, start_date, end_date, premium):
 
     plot_result(normalized_weight_df, index_pure_close_df, index_close_df, comp_close_df, index)
 
-    
 if __name__ == "__main__":
     import os
     import pandas as pd
@@ -193,6 +192,6 @@ if __name__ == "__main__":
 
     pro = activate_ts_pro()
 
-    run(index_code, start_date, end_date, 0.05)
+    run(index_code, start_date, end_date, 0.03)
 
     

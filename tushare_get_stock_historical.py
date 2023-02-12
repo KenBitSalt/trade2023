@@ -5,6 +5,13 @@ def activate_ts_pro():
     pro = ts.pro_api(token)
     return pro
 
+def get_1day_path():
+    with open('config.json', 'r') as j:
+        config_df = json.loads(j.read())
+    datapath = config_df['path']+ '/' + config_df['data_storage'] +'/' + '1day'
+    #print('Using Storage at: %s' % datapath)
+    return datapath
+
 if __name__ == "__main__":
     import os
     import argparse
@@ -16,6 +23,8 @@ if __name__ == "__main__":
     from datetime import datetime
 
     pro = activate_ts_pro()
+    daily_path = get_1day_path()
+    print(daily_path)
     stocks = pd.read_parquet("stock_config.gzip")
     today = datetime.today().strftime('%Y%m%d') 
     print(stocks)
