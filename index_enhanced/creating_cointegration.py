@@ -104,20 +104,22 @@ def plot_result(index_pure_close_df, index_close_df,
     tmp = min(error_list)
     index = error_list.index(tmp)  # index of min tracking error and best portfolio
     best_weight_df = weight_df_list[index]
-    train_split_index = index + non_consider_headtime
-    validation_split_index = index + non_consider_headtime+validation_days
+    train_split_index = non_consider_headtime + index
+    validation_split_index = non_consider_headtime + validation_days + index
 
     ax1.annotate(text='best tracking error to premiumed index', xy=(index,error_list[index]),c="red")
     ax1.scatter(x=index, y = error_list[index], s=30, c="red")
 
     total = np.zeros(len(index_close_df))
-    for i in range(len(best_weight_df)):  # for each stock, add their contributions
+    for i in range(len(best_weight_df)):  
+        # for each stock, add their contributions to portfolio performance
         raw = best_weight_df.loc[i,'raw_weight']
         id = best_weight_df.loc[i,'instrument_id']
         contribution  = comp_close_df.loc[:,id]*raw
         total = total+contribution
 
     factor = total[0]/index_pure_close_df.loc[0,'close']
+    # normalize the starting point
     total = total/factor
 
     # plot overview
@@ -197,7 +199,7 @@ def run(index_code, start_date, end_date, premium):
     # a training and test process
     error_list = []
     weight_df_list = []
-    non_consider_headtime = 350
+    non_consider_headtime = 250
     max_train_days = 400
     validation_days = 250
 
@@ -248,7 +250,7 @@ if __name__ == "__main__":
     index_code = args.index_id # specify the code for the index
     start_date = args.start # specify the start date
     end_date = args.end # specify the end date
-    premium = 0.09   
+    premium = 0.05
 
     pro = activate_ts_pro()
 
