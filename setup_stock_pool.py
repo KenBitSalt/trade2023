@@ -34,6 +34,7 @@ def setup_stock_config(stock_array):
         "list_date"
         ]
     df["latest_update"] = df["list_date"]
+    df = df.reset_index()
     df.to_parquet("stock_config.gzip")
 
 if __name__ == "__main__":
@@ -42,7 +43,7 @@ if __name__ == "__main__":
     import pandas as pd
     from tqdm import tqdm
     pro = activate_ts_pro()
-    stock_ids = ['000001.SZ', '000002.SZ', '000008.SZ', '000004.SZ', '000005.SZ', '002594.SZ']
+    stock_ids = ['000001.SZ', '000002.SZ', '000008.SZ', '002594.SZ']
     setup_stock_config(stock_ids)
     df = pd.read_parquet("stock_config.gzip")
     print(df)
