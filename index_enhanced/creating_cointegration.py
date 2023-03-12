@@ -107,8 +107,8 @@ def plot_result(index_pure_close_df, index_close_df,
     train_split_index = non_consider_headtime + index
     validation_split_index = non_consider_headtime + validation_days + index
 
-    ax1.annotate(text='best tracking error to premiumed index', xy=(index,error_list[index]),c="red")
-    ax1.scatter(x=index, y = error_list[index], s=30, c="red")
+    #ax1.annotate(text='best tracking error to premiumed index', xy=(index,error_list[index]),c="red", s=30)
+    #ax1.scatter(x=index, y = error_list[index], s=30, c="red")
 
     total = np.zeros(len(index_close_df))
     for i in range(len(best_weight_df)):  

@@ -12,8 +12,15 @@ def get_1day_path():
     #print('Using Storage at: %s' % datapath)
     return datapath
 
+def get_stockconfig():
+    datapath = '/Users/siyichen/Documents/realstuff/trade2023/stock_config.gzip'
+    df = pd.read_parquet(datapath)
+    #print('Using Storage at: %s' % datapath)
+    return df
+
 def get_historical(stock_lists,today_date):
     print(stock_lists)
+    
     #df = pro.daily(ts_code=stock, start_date=date, end_date=date)
     for i in tqdm(range(len(stock_lists))):
         id = stock_lists.loc[i,'instrument_id']
@@ -23,6 +30,9 @@ def get_historical(stock_lists,today_date):
         path = (get_1day_path())
         save_name = path+'/'+id+'.gzip'
         df.to_parquet(save_name)
+        stock_lists.loc[:,'latest_update'] = today_date
+
+    stock_lists.to_parquet('/Users/siyichen/Documents/realstuff/trade2023/stock_config.gzip')
 
 
 if __name__ == "__main__":
