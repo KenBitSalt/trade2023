@@ -32,7 +32,7 @@ def get_historical(stock_lists,today_date):
         df.to_parquet(save_name)
         stock_lists.loc[:,'latest_update'] = today_date
 
-    stock_lists.to_parquet('/trade2023/stock_config.gzip')
+    stock_lists.to_parquet('stock_config.gzip')
 
 
 if __name__ == "__main__":
