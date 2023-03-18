@@ -13,7 +13,7 @@ def get_1day_path():
     return datapath
 
 def get_stockconfig():
-    datapath = '/Users/siyichen/Documents/realstuff/trade2023/stock_config.gzip'
+    datapath = 'trade2023/stock_config.gzip'
     df = pd.read_parquet(datapath)
     #print('Using Storage at: %s' % datapath)
     return df
@@ -32,7 +32,7 @@ def get_historical(stock_lists,today_date):
         df.to_parquet(save_name)
         stock_lists.loc[:,'latest_update'] = today_date
 
-    stock_lists.to_parquet('/Users/siyichen/Documents/realstuff/trade2023/stock_config.gzip')
+    stock_lists.to_parquet('/trade2023/stock_config.gzip')
 
 
 if __name__ == "__main__":
