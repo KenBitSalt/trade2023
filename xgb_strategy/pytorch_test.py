@@ -7,6 +7,7 @@ from sklearn.model_selection import GridSearchCV
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+'''
 # Print PyTorch version
 print(f"PyTorch version: {torch.__version__}")
 
@@ -18,7 +19,7 @@ if torch.cuda.is_available():
 else:
     print("CUDA is not available. Using CPU for model training.")
     device = torch.device("cpu")
-
+'''
 
 
 # Read in stock data from Parquet file
